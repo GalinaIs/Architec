@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace Service\Product;
 
 use Model;
+use Service\Product\SorterProduct\DefineSorterProduct;
 
 class Product
 {
@@ -35,6 +36,11 @@ class Product
         // $sortType === 'price'; // Сортировка по цене
         // $sortType === 'name'; // Сортировка по имени
 
+        $sort = DefineSorterProduct::defineSorter($sortType);
+        if ($sort != null) {
+            $sort->applySort($productList);
+        }
+        
         return $productList;
     }
 
