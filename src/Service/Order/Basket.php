@@ -7,16 +7,17 @@ namespace Service\Order;
 use Model;
 use Service\Billing\Card;
 use Service\Billing\IBilling;
-use Service\Communication\Email;
 use Service\Communication\ICommunication;
 use Service\Discount\IDiscount;
 use Service\Discount\NullObject;
 use Service\User\ISecurity;
 use Service\User\Security;
+use Service\Communication\OrderObserver\OrderObserver;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class Basket
 {
+    private $observer = [];
     /**
      * Сессионный ключ списка всех продуктов корзины
      */
@@ -88,11 +89,12 @@ class Basket
         $discount = new NullObject();
 
         // Здесь должна быть некоторая логика получения способа уведомления пользователя о покупке
-        $communication = new Email();
+        //$communication = new Email();
+        OrderObserver::createOrderObserver($this);
 
         $security = new Security($this->session);
 
-        $this->checkoutProcess($discount, $billing, $security, $communication);
+        $this->checkoutProcess($discount, $billing, $security);
     }
 
     /**
@@ -101,14 +103,12 @@ class Basket
      * @param IDiscount $discount,
      * @param IBilling $billing,
      * @param ISecurity $security,
-     * @param ICommunication $communication
      * @return void
      */
     public function checkoutProcess(
         IDiscount $discount,
         IBilling $billing,
-        ISecurity $security,
-        ICommunication $communication
+        ISecurity $security
     ): void {
         $totalPrice = 0;
         foreach ($this->getProductsInfo() as $product) {
@@ -121,7 +121,8 @@ class Basket
         $billing->pay($totalPrice);
 
         $user = $security->getUser();
-        $communication->process($user, 'checkout_template');
+        $this->notifyObserver($user, 'checkout_template');
+        //$communication->process($user, 'checkout_template');
     }
 
     /**
@@ -142,5 +143,20 @@ class Basket
     private function getProductIds(): array
     {
         return $this->session->get(static::BASKET_DATA_KEY, []);
+    }
+
+    public function attachObserver(ICommunication $comminucation) {
+        $this->observer[] = $comminucation;
+    }
+
+    public function detachObserver(ICommunication $comminucation) {
+        $key = array_search($comminucation, $this->observer);
+        if ($key!=null)
+            unset($this->observer[$key]);
+    }
+
+    public function notifyObserver(Model\Entity\User $user, string $message) : void {
+        foreach($this->observer as $observer) 
+            $observer->process($user, $message);
     }
 }

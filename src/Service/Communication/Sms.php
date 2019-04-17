@@ -14,5 +14,6 @@ class Sms implements ICommunication
     public function process(Model\Entity\User $user, string $templateName, array $params = []): void
     {
         // Вызываем метод по формированию смс текста и последующего его отправления
+        //var_dump("SMS оповещение");
     }
 }

@@ -1,0 +1,70 @@
+1. public function actionItem($id) {
+        $model = Command::findOne($id);
+
+        $user = User::find()
+            ->all();
+        $userList = ArrayHelper::map($user, 'id', 'username');
+
+        $roleCommand = RoleCommand::find()
+            ->all();
+        $roleCommandList = ArrayHelper::map($roleCommand, 'id', 'name');
+
+        $searchModel = new CommandUserSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $id);
+
+        $user_id =  Yii::$app->user->identity->id;
+        $role = (CommandUser::find()
+            ->where([
+                'id_command' => $id,
+                'id_user' => $user_id
+            ])->one())->roleCommand->name;
+
+        return $this->render('item', [
+            'name' => $model->name,
+            'userList' => $userList,
+            'roleCommandList' => $roleCommandList,
+            'commandUser' => new CommandUser(['id_command' => $id]),
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+            'role' => $role,
+            'id' => $model->id      
+        ]);
+    }
+
+    а. $id - нужно обязательно проверить, что в строке запроса нам пришло именно число - антипаттерн: слепая вера.
+
+    б. божественный объект - было бы неплохо сделать прослойки (repository), которые по своей логике получали данные из БД и отдавали бы контроллеру данные в виде объекта - бизнес-логика перешла бы в модель, контроллер стал бы более легковесным, плюс было бы соблюдение принципа dry(ошибка - программирование методом копирования-вставки тогда, когда это все можно выделить в отдельный класс и метод и обращаться к нему при необходимости) - еще несколько раз в контроллерах встречается код, например, 
+
+    $user = User::find()
+        ->all();
+    $userList = ArrayHelper::map($user, 'id', 'username');
+
+2. $bot = \Yii::$app->bot;
+    $bot->setCurlOption(CURLOPT_TIMEOUT, 20);
+    $bot->setCurlOption(CURLOPT_CONNECTTIMEOUT, 10);
+    $bot->setCurlOption(CURLOPT_HTTPHEADER, ['Expect: ']);
+
+    20, 10 - магические числа. Что за числа, почему они не вынесены в конфиг.
+
+3. public function actionUpdate($id)
+    {
+        $model = $this->findModel($id);
+        $model->load(Yii::$app->request->post());
+        $model->save();
+        return $this->render('item', [
+            'model' => $model
+        ]);
+    }
+
+    protected function findModel($id)
+    {
+        if (($model = Project::findOne($id)) !== null) {
+            return $model;
+        }
+
+        throw new NotFoundHttpException('The requested page does not exist.');
+    }
+
+    И это все в контроллере. Нужно было опять же выделить слой repository для таких вещей, чтобы внутри уже реализовывалась логика по поиску в БД, сохранению информации и тд. Нарушается принцип единственности отвественности. По сути опять божественный объект
+    
+    Мне сейчас имея знания об антипаттернах и хорошее понимание solid хочется взять и переписать весь проект.
