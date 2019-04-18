@@ -16,7 +16,7 @@ class OrderObserver {
      */
     public static function createOrderObserver(Basket $basket) {
         //по какой-то логике выбираем уведомления все способы уведомления пользователя, например из БД, которые пользователь указал при регистрации
-        $basket->attachObserver(new Email());
-        $basket->attachObserver(new Sms());
+        $basket->attach(new Email());
+        $basket->attach(new Sms());
     }
 }

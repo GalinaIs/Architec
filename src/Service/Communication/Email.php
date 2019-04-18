@@ -5,8 +5,9 @@ declare(strict_types = 1);
 namespace Service\Communication;
 
 use Model;
+use Service\Communication\OrderObserver\AbstractNotifyCommunication;
 
-class Email implements ICommunication
+class Email extends AbstractNotifyCommunication implements ICommunication
 {
     /**
      * @inheritdoc
