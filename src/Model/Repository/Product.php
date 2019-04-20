@@ -21,11 +21,23 @@ class Product
         }
 
         $productList = [];
+        $productDefault = new Entity\Product(0, "", 0);
         foreach ($this->getDataFromSource(['id' => $ids]) as $item) {
-            $productList[] = new Entity\Product($item['id'], $item['name'], $item['price']);
+            $productList[] = $this->cloneProduct($productDefault, $item);
         }
 
         return $productList;
+    }
+
+    /**
+     * Клонирование объекта продукта с установкой нужных свойств
+     */
+    private function cloneProduct(Entity\Product $productDefault, $item):Entity\Product {
+        $product = clone $productDefault;
+        $product->setId($item['id']);
+        $product->setName($item['name']);
+        $product->setPrice($item['price']);
+        return $product;
     }
 
     /**

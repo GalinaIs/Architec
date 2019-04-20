@@ -6,10 +6,7 @@ namespace Service\Order;
 
 use Model;
 use Service\Billing\Card;
-use Service\Billing\IBilling;
-use Service\Discount\IDiscount;
 use Service\Discount\NullObject;
-use Service\User\ISecurity;
 use Service\User\Security;
 use Service\Communication\OrderObserver\OrderObserver;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -83,47 +80,21 @@ class Basket implements SubjectCommunication
      */
     public function checkout(): void
     {
-        // Здесь должна быть некоторая логика выбора способа платежа
-        $billing = new Card();
-
-        // Здесь должна быть некоторая логика получения информации о скидки пользователя
-        $discount = new NullObject();
-
-        // Здесь должна быть некоторая логика получения способа уведомления пользователя о покупке
-        //$communication = new Email();
         OrderObserver::createOrderObserver($this);
 
+        $this->checkoutProccess();
+        
         $security = new Security($this->session);
-
-        $this->checkoutProcess($discount, $billing, $security);
+        $user = $security->getUser();
+        $this->notify($user);
     }
 
-    /**
-     * Проведение всех этапов заказа
-     *
-     * @param IDiscount $discount,
-     * @param IBilling $billing,
-     * @param ISecurity $security,
-     * @return void
-     */
-    public function checkoutProcess(
-        IDiscount $discount,
-        IBilling $billing,
-        ISecurity $security
-    ): void {
-        $totalPrice = 0;
-        foreach ($this->getProductsInfo() as $product) {
-            $totalPrice += $product->getPrice();
-        }
-
-        $discount = $discount->getDiscount();
-        $totalPrice = $totalPrice - $totalPrice / 100 * $discount;
-
-        $billing->pay($totalPrice);
-
-        $user = $security->getUser();
-        $this->notify($user, 'checkout_template');
-        //$communication->process($user, 'checkout_template');
+    public function checkoutProccess():void {
+        $orderBuilder = new OrderBuilder();
+        $orderBuilder->setBilling(new Card());
+        $orderBuilder->setDiscount(new NullObject());
+        $orderBuilder->setListProduct($this->getProductsInfo());
+        $orderBuilder->build()->checkout();
     }
 
     /**
