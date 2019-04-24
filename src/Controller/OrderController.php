@@ -9,6 +9,7 @@ use Service\Order\Basket;
 use Service\User\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Service\Composite\FormCheckout;
 
 class OrderController
 {
@@ -29,7 +30,9 @@ class OrderController
         $productList = (new Basket($request->getSession()))->getProductsInfo();
         $isLogged = (new Security($request->getSession()))->isLogged();
 
-        return $this->render('order/info.html.php', ['productList' => $productList, 'isLogged' => $isLogged]);
+        $productInfo = FormCheckout::getForm($productList, $isLogged);
+
+        return $this->render('order/info.html.php', ['productInfo' => $productInfo]);
     }
 
     /**
