@@ -68,4 +68,16 @@ class Product
             'price' => $this->price,
         ];
     }
+
+    public function setId(int $id):void {
+        $this->id = $id;
+    }
+
+    public function setName(string $name):void {
+        $this->name = $name;
+    }
+
+    public function setPrice(float $price):void {
+        $this->price = $price;
+    }
 }

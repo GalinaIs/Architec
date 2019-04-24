@@ -46,7 +46,7 @@ class Product
 
     /**
      * Фабричный метод для репозитория Product
-     *
+     * Если реализовать контракт (интерфейс), со всеми методами из Model\Repository\Product, то при изменении места  хранения User в БД(по сути Entity\User на другой класс - Entity\AnotherUser) - другая база, другие поля, другая логика, то создаем класс Model\Repository\AnotherProduct и реализовываем новую логику работы с Entity\AnotherUser, а здесь всего лишь меняем new Model\Repository\Product() на new Model\Repository\AnotherProduct(). Ничего больше изменять не нужно будет (ну кроме типов - конкретные на интерфейсы). По сути уменьшаем зависимость от конкретных классов - знаем только контракт.
      * @return Model\Repository\Product
      */
     protected function getProductRepository(): Model\Repository\Product

@@ -6,16 +6,14 @@ namespace Service\Order;
 
 use Model;
 use Service\Billing\Card;
-use Service\Billing\IBilling;
-use Service\Communication\ICommunication;
-use Service\Discount\IDiscount;
 use Service\Discount\NullObject;
-use Service\User\ISecurity;
 use Service\User\Security;
 use Service\Communication\OrderObserver\OrderObserver;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Service\Communication\OrderObserver\Observer;
+use Model\Entity\User;
 
-class Basket
+class Basket implements SubjectCommunication
 {
     private $observer = [];
     /**
@@ -82,47 +80,21 @@ class Basket
      */
     public function checkout(): void
     {
-        // Здесь должна быть некоторая логика выбора способа платежа
-        $billing = new Card();
-
-        // Здесь должна быть некоторая логика получения информации о скидки пользователя
-        $discount = new NullObject();
-
-        // Здесь должна быть некоторая логика получения способа уведомления пользователя о покупке
-        //$communication = new Email();
         OrderObserver::createOrderObserver($this);
 
+        $this->checkoutProccess();
+        
         $security = new Security($this->session);
-
-        $this->checkoutProcess($discount, $billing, $security);
+        $user = $security->getUser();
+        $this->notify($user);
     }
 
-    /**
-     * Проведение всех этапов заказа
-     *
-     * @param IDiscount $discount,
-     * @param IBilling $billing,
-     * @param ISecurity $security,
-     * @return void
-     */
-    public function checkoutProcess(
-        IDiscount $discount,
-        IBilling $billing,
-        ISecurity $security
-    ): void {
-        $totalPrice = 0;
-        foreach ($this->getProductsInfo() as $product) {
-            $totalPrice += $product->getPrice();
-        }
-
-        $discount = $discount->getDiscount();
-        $totalPrice = $totalPrice - $totalPrice / 100 * $discount;
-
-        $billing->pay($totalPrice);
-
-        $user = $security->getUser();
-        $this->notifyObserver($user, 'checkout_template');
-        //$communication->process($user, 'checkout_template');
+    public function checkoutProccess():void {
+        $orderBuilder = new OrderBuilder();
+        $orderBuilder->setBilling(new Card());
+        $orderBuilder->setDiscount(new NullObject());
+        $orderBuilder->setListProduct($this->getProductsInfo());
+        $orderBuilder->build()->checkout();
     }
 
     /**
@@ -145,18 +117,18 @@ class Basket
         return $this->session->get(static::BASKET_DATA_KEY, []);
     }
 
-    public function attachObserver(ICommunication $comminucation) {
-        $this->observer[] = $comminucation;
+    public function attach(Observer $observer):void {
+        $this->observer[] = $observer;
     }
 
-    public function detachObserver(ICommunication $comminucation) {
-        $key = array_search($comminucation, $this->observer);
+    public function detach(Observer $observer):void {
+        $key = array_search($observer, $this->observer);
         if ($key!=null)
             unset($this->observer[$key]);
     }
 
-    public function notifyObserver(Model\Entity\User $user, string $message) : void {
+    public function notify(User $user) : void {
         foreach($this->observer as $observer) 
-            $observer->process($user, $message);
+            $observer->update($user, 'checkout_template');
     }
 }
