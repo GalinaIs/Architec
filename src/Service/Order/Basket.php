@@ -5,8 +5,6 @@ declare(strict_types = 1);
 namespace Service\Order;
 
 use Model;
-use Service\Billing\Card;
-use Service\Discount\NullObject;
 use Service\User\Security;
 use Service\Communication\OrderObserver\OrderObserver;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -90,11 +88,7 @@ class Basket implements SubjectCommunication
     }
 
     public function checkoutProccess():void {
-        $orderBuilder = new OrderBuilder();
-        $orderBuilder->setBilling(new Card());
-        $orderBuilder->setDiscount(new NullObject());
-        $orderBuilder->setListProduct($this->getProductsInfo());
-        $orderBuilder->build()->checkout();
+        (new FacadeOrder($this->getProductsInfo()))->checkout();
     }
 
     /**
