@@ -4,6 +4,7 @@ namespace Service\Order;
 
 use Service\Discount\IDiscount;
 use Service\Billing\IBilling;
+use Service\TransactionScript\OnlinePaymentTransactionScript;
 
 class Order {
     /**
@@ -42,6 +43,8 @@ class Order {
         $totalPrice = $totalPrice - $totalPrice / 100 * $discount;
 
         $this->billing->pay($totalPrice);
+
+        (new OnlinePaymentTransactionScript($totalPrice))->makeTransaction();
     }
 
 }
